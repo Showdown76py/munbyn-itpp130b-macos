@@ -13,7 +13,7 @@ enum QueueInstaller {
         let process = Process(); let output = Pipe()
         process.executableURL = URL(fileURLWithPath: executable); process.arguments = args
         process.standardOutput = output; process.standardError = output
-        process.environment = ["PATH":"/usr/bin:/bin:/usr/sbin:/sbin","LANG":"C","CUPS_SERVER":"localhost"]
+        process.environment = ["PATH":"/usr/bin:/bin:/usr/sbin:/sbin","LANG":"C","CUPS_SERVER":QueuePlan.server]
         try process.run()
         let data = output.fileHandleForReading.readDataToEndOfFile(); process.waitUntilExit()
         return (process.terminationStatus,String(decoding: data,as: UTF8.self))

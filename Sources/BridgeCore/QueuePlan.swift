@@ -6,7 +6,8 @@ public enum QueuePlan {
     public static let id = "MUNBYN_ITPP130B_Bluetooth"
     public static let display = "MUNBYN ITPP130B (Bluetooth)"
     public static let marker = "munbyn-itpp130b-bridge-v1"
-    public static let server = "localhost:631"
+    // local domain socket not tcp: cupsd gets peer creds there, over localhost:631 lpadmin gets Unauthorized (seen on macOS 27)
+    public static let server = "/private/var/run/cupsd"
     public static let uri = "socket://127.0.0.1:19100/?contimeout=5&waiteof=true"
     public static func install(ppd: String,existing: QueueSnapshot?) throws -> [String] {
         try validate(existing)
