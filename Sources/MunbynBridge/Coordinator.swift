@@ -158,7 +158,7 @@ import BridgeCore
         case "status","doctor":
             let inspection = await Task.detached { Result { try QueueInstaller.snapshot() } }.value
             let snapshot = (try? inspection.get()) ?? nil
-            var inspectionDescription = "inspected localhost:631"
+            var inspectionDescription = "inspected \(QueuePlan.server)"
             if case .failure = inspection { inspectionDescription = "unavailable; ownership unknown" }
             var transmission: Any = NSNull()
             if let metrics = lastTransmissionMetrics,let data = try? JSONEncoder().encode(metrics),let object = try? JSONSerialization.jsonObject(with:data) { transmission = object }

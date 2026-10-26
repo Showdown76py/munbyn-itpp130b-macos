@@ -6,6 +6,7 @@
 #include <poll.h>
 #include <errno.h>
 #include <time.h>
+#include <sys/stat.h>
 
 struct MBReader {
     int fd, eof, failed;
@@ -71,7 +72,12 @@ unsigned mb_raster_pixels(MBReader *ctx,unsigned char *dst,unsigned length) {
 void mb_raster_close(MBReader *ctx) {
     if (ctx) { cupsRasterClose(ctx->raster); free(ctx); }
 }
-const char *mb_cups_host(void) { return "localhost"; }
+// cupsd only gets peer creds over its domain socket. loopback tcp is the fallback when it's absent
+const char *mb_cups_host_for(int socket_present) { return socket_present ? "/private/var/run/cupsd" : "localhost"; }
+const char *mb_cups_host(void) {
+    struct stat st;
+    return mb_cups_host_for(stat(mb_cups_host_for(1),&st) == 0 && S_ISSOCK(st.st_mode));
+}
 int mb_queue_status(ipp_status_t status,int response_received) {
     if (status == IPP_STATUS_ERROR_NOT_FOUND) return 0;
     return response_received && status < IPP_STATUS_ERROR_BAD_REQUEST ? 1 : -1;

@@ -3,9 +3,9 @@ import Testing
 @testable import BridgeCore
 struct QueueTests {
     @Test func installationIsNarrowIdempotentAndUnshared() throws {
-        let args = try QueuePlan.install(ppd: "/tmp/fixture.ppd",existing: nil)
+        let args = try QueuePlan.install(ppd: "/tmp/fixture.ppd",existing: nil,server: "/private/var/run/cupsd")
         #expect(args == ["-h","/private/var/run/cupsd","-p","MUNBYN_ITPP130B_Bluetooth","-D","MUNBYN ITPP130B (Bluetooth)","-L","munbyn-itpp130b-bridge-v1","-v","socket://127.0.0.1:19100/?contimeout=5&waiteof=true","-P","/tmp/fixture.ppd","-E","-o","printer-is-shared=false","-o","printer-error-policy=abort-job","-o","job-sheets-default=none","-o","PageSize=Label100x150"])
-        #expect(try QueuePlan.install(ppd: "/tmp/fixture.ppd",existing: .init(location: QueuePlan.marker,uri: QueuePlan.uri)) == args)
+        #expect(try QueuePlan.install(ppd: "/tmp/fixture.ppd",existing: .init(location: QueuePlan.marker,uri: QueuePlan.uri),server: "/private/var/run/cupsd") == args)
     }
     @Test func refusesForeignQueueAndNeverDeletesUSB() {
         expectThrows(try QueuePlan.install(ppd: "/tmp/fixture.ppd",existing: .init(location: "unrelated",uri: QueuePlan.uri)))
@@ -13,7 +13,8 @@ struct QueueTests {
     }
     @Test func uninstallOnlyOwnsExactQueue() throws {
         #expect(try QueuePlan.uninstall(existing: nil).isEmpty)
-        #expect(try QueuePlan.uninstall(existing: .init(location: QueuePlan.marker,uri: QueuePlan.uri)) == ["-h","/private/var/run/cupsd","-x",QueuePlan.id])
+        #expect(try QueuePlan.uninstall(existing: .init(location: QueuePlan.marker,uri: QueuePlan.uri),server: "/private/var/run/cupsd") == ["-h","/private/var/run/cupsd","-x",QueuePlan.id])
+        #expect(try QueuePlan.uninstall(existing: .init(location: QueuePlan.marker,uri: QueuePlan.uri),server: "localhost") == ["-h","localhost","-x",QueuePlan.id])
     }
     @Test func quotesEveryShellMetacharacterAsLiteral() {
         #expect(QueuePlan.shellQuote("a'$(secret)`thing`\n") == "'a'\\''$(secret)`thing`\n'")
@@ -23,7 +24,10 @@ import CBridge
 extension QueueTests {
     @Test func inspectionCannotFollowRemoteServerOrTreatFailureAsAbsence() {
         let previous = String(cString:cupsServer()); cupsSetServer("remote.invalid"); defer { cupsSetServer(previous) }
-        #expect(String(cString:mb_cups_host()) == "localhost")
+        #expect(["/private/var/run/cupsd","localhost"].contains(String(cString:mb_cups_host())))
+        #expect(String(cString:mb_cups_host_for(1)) == "/private/var/run/cupsd")
+        #expect(String(cString:mb_cups_host_for(0)) == "localhost")
+        #expect(QueuePlan.server == String(cString:mb_cups_host()))
         #expect(mb_queue_status(IPP_STATUS_ERROR_SERVICE_UNAVAILABLE,0) == -1)
         #expect(mb_queue_status(IPP_STATUS_ERROR_NOT_FOUND,1) == 0)
         #expect(mb_queue_status(IPP_STATUS_ERROR_NOT_FOUND,0) == 0)
